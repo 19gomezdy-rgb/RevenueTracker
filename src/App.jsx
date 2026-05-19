@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchEntriesByYear, insertEntry, deleteEntry as dbDelete, fetchGoal, saveGoal } from './modules/db.js'
+import { fetchEntriesByYear, insertEntry, updateEntry, deleteEntry as dbDelete, fetchGoal, saveGoal } from './modules/db.js'
 import Header from './components/Header.jsx'
 import MetricsGrid from './components/MetricsGrid.jsx'
 import ProgressBar from './components/ProgressBar.jsx'
@@ -55,6 +55,15 @@ export default function App() {
       setEntries(prev => [...prev, newEntry])
     } catch (err) {
       alert('Failed to save entry: ' + err.message)
+    }
+  }
+
+  async function handleUpdateEntry(id, changes) {
+    try {
+      const updated = await updateEntry(id, changes)
+      setEntries(prev => prev.map(e => e.id === id ? updated : e))
+    } catch (err) {
+      alert('Failed to update entry: ' + err.message)
     }
   }
 
@@ -118,7 +127,7 @@ export default function App() {
         <div className="section-label">
           Entries — <span>{MONTHS[currentMonth]}</span>
         </div>
-        <EntriesTable entries={currentEntries} onDelete={handleDeleteEntry} />
+        <EntriesTable entries={currentEntries} onDelete={handleDeleteEntry} onUpdate={handleUpdateEntry} />
 
         <div className="section-label">Breakdown by stream</div>
         <BreakdownGrid entries={currentEntries} />

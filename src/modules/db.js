@@ -33,6 +33,17 @@ export async function insertEntry({ client, amount, type, status, month, year })
   return data
 }
 
+export async function updateEntry(id, { client, amount, type, status }) {
+  const { data, error } = await supabase
+    .from('entries')
+    .update({ client, amount, type, status })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 export async function deleteEntry(id) {
   const { error } = await supabase
     .from('entries')
