@@ -28,18 +28,18 @@ export default function EntriesTable({ entries, onDelete }) {
           </tr>
         </thead>
         <tbody>
-          {entries.map((e, i) => {
+          {entries.map((e) => {
             const d = e.date
               ? new Date(e.date).toLocaleDateString('en-US', { month:'short', day:'numeric' })
               : '—'
             return (
-              <tr key={i}>
+              <tr key={e.id}>
                 <td title={e.client}>{e.client}</td>
                 <td style={{fontWeight:500}}>{fmt(e.amount)}</td>
                 <td><span className={`pill ${PILL_CLASS[e.type] || 'pill-other'}`}>{PILL_LABEL[e.type] || e.type}</span></td>
                 <td style={{color: STATUS_COLOR[e.status] || 'var(--text-muted)', fontSize:'12px'}}>{STATUS_LABEL[e.status] || e.status}</td>
                 <td style={{color:'var(--text-hint)', fontSize:'12px'}}>{d}</td>
-                <td><button className="del-btn" onClick={() => onDelete(i)} title="Delete">×</button></td>
+                <td><button className="del-btn" onClick={() => onDelete(e.id)} title="Delete">×</button></td>
               </tr>
             )
           })}

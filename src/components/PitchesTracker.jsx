@@ -1,13 +1,19 @@
-import { useState } from 'react'
-import { loadPitches, savePitchesData } from '../modules/storage.js'
+import { useState, useEffect } from 'react'
+import { fetchPitches, savePitches } from '../modules/db.js'
 
 export default function PitchesTracker() {
-  const [pitches, setPitches] = useState(() => loadPitches())
+  const [pitches, setPitches] = useState(0)
 
-  function handleChange(e) {
+  useEffect(() => {
+    fetchPitches().then(setPitches).catch(() => {})
+  }, [])
+
+  async function handleChange(e) {
     const v = parseInt(e.target.value) || 0
     setPitches(v)
-    savePitchesData(v)
+    try {
+      await savePitches(v)
+    } catch {}
   }
 
   let statusEl = null

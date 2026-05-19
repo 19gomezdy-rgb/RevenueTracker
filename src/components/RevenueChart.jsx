@@ -1,20 +1,19 @@
 import { useEffect, useRef } from 'react'
 import Chart from 'chart.js/auto'
-import { getEntries } from '../modules/entries.js'
 
-export default function RevenueChart({ data, year, goal, months }) {
+export default function RevenueChart({ entries, goal, months }) {
   const canvasRef = useRef(null)
   const chartRef = useRef(null)
 
   useEffect(() => {
     const confirmed = months.map((_, i) =>
-      getEntries(data, i, year)
-        .filter(e => e.status === 'confirmed' || e.status === 'deposit')
+      entries
+        .filter(e => e.month === i && (e.status === 'confirmed' || e.status === 'deposit'))
         .reduce((s, e) => s + e.amount, 0)
     )
     const pipeline = months.map((_, i) =>
-      getEntries(data, i, year)
-        .filter(e => e.status === 'pipeline' || e.status === 'invoiced')
+      entries
+        .filter(e => e.month === i && (e.status === 'pipeline' || e.status === 'invoiced'))
         .reduce((s, e) => s + e.amount, 0)
     )
 
@@ -44,7 +43,7 @@ export default function RevenueChart({ data, year, goal, months }) {
     })
 
     return () => { if (chartRef.current) chartRef.current.destroy() }
-  }, [data, year, goal, months])
+  }, [entries, goal, months])
 
   return (
     <div className="chart-card">
