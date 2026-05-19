@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dayview Media — Revenue Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.08);
+    --border-mid: rgba(0,0,0,0.14);
+    --text: #1A1A18;
+    --text-muted: #6B6B68;
+    --text-hint: #A0A09C;
+    --teal: #1D9E75;
+    --teal-light: #E1F5EE;
+    --teal-dark: #085041;
+    --purple: #7F77DD;
+    --purple-light: #EEEDFE;
+    --purple-dark: #3C3489;
+    --amber: #BA7517;
+    --amber-light: #FAEEDA;
+    --coral: #D85A30;
+    --coral-light: #FAECE7;
+    --coral-dark: #712B13;
+    --goal: 4000;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: 400; color: var(--text); }
+  header span { font-size: 13px; color: var(--text-muted); }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
+  .metric { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 1rem 1.25rem; }
+  .metric-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .metric-val { font-size: 24px; font-weight: 500; color: var(--text); }
+  .metric-sub { font-size: 12px; margin-top: 3px; color: var(--text-muted); }
+  .on-track { color: var(--teal); }
+  .off-track { color: var(--coral); }
+
+  .progress-wrap { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+  .progress-header { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+  .progress-bar { height: 10px; background: #F1EFE8; border-radius: 5px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 5px; transition: width 0.4s ease; }
+
+  .section-label { font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; margin-top: 1.75rem; }
+
+  .month-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .mtab { padding: 5px 12px; font-size: 12px; font-family: 'DM Sans', sans-serif; border-radius: 6px; border: 0.5px solid var(--border-mid); cursor: pointer; background: var(--surface); color: var(--text-muted); transition: all 0.15s; }
+  .mtab:hover { background: #F1EFE8; color: var(--text); }
+  .mtab.active { background: var(--text); color: #fff; border-color: var(--text); }
+
+  .form-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  label { font-size: 12px; color: var(--text-muted); }
+  input, select {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 8px 12px;
+    border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    width: 100%;
+  }
+  input:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 2px rgba(29,158,117,0.12); }
+  .add-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 20px;
+    background: var(--teal);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity 0.15s;
+  }
+  .add-btn:hover { opacity: 0.88; }
+
+  .entries-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.25rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  thead th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 0.5px solid var(--border); background: #FAFAF8; }
+  tbody td { padding: 10px 14px; border-bottom: 0.5px solid var(--border); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #FAFAF8; }
+
+  .pill { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 10px; }
+  .pill-retainer { background: var(--teal-light); color: var(--teal-dark); }
+  .pill-project { background: var(--purple-light); color: var(--purple-dark); }
+  .pill-product { background: var(--amber-light); color: var(--amber); }
+  .pill-coaching { background: var(--coral-light); color: var(--coral-dark); }
+  .pill-other { background: #F1EFE8; color: var(--text-muted); }
+
+  .del-btn { background: none; border: none; cursor: pointer; color: var(--text-hint); font-size: 16px; padding: 0 4px; line-height: 1; }
+  .del-btn:hover { color: var(--coral); }
+  .empty { padding: 2rem; text-align: center; font-size: 13px; color: var(--text-hint); }
+
+  .breakdown-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 1.5rem; }
+  .b-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+  .b-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .b-info { flex: 1; }
+  .b-label { font-size: 11px; color: var(--text-muted); }
+  .b-val { font-size: 16px; font-weight: 500; color: var(--text); }
+
+  .chart-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-muted); }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+  .pitches-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+  .pitches-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .pitches-row label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+  .pitches-row input { width: 80px; }
+  .pitch-stat { font-size: 13px; color: var(--text-muted); }
+  .pitch-stat strong { color: var(--text); font-weight: 500; }
+
+  @media (max-width: 600px) {
+    header { padding: 1rem; }
+    .container { padding: 1rem; }
+    .form-grid { grid-template-columns: 1fr; }
+    .metric-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Dayview Media</h1>
+  <span>Revenue Tracker</span>
+</header>
+
+<div class="container">
+
+  <div class="section-label">This month at a glance</div>
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-label">Confirmed income</div><div class="metric-val" id="m-total">$0</div><div class="metric-sub" id="m-status">—</div></div>
+    <div class="metric"><div class="metric-label">Monthly goal</div><div class="metric-val" id="m-goal-disp">$4,000</div><div class="metric-sub" style="color:var(--text-muted);">Q1 target</div></div>
+    <div class="metric"><div class="metric-label">Still needed</div><div class="metric-val" id="m-gap">$4,000</div><div class="metric-sub" id="m-gap-sub">keep pitching</div></div>
+    <div class="metric"><div class="metric-label">Year to date</div><div class="metric-val" id="ytd-total">$0</div><div class="metric-sub" style="color:var(--text-muted);">all confirmed</div></div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-header"><span id="pct-label">0% of $4,000 goal</span><span id="pct-right">$0 confirmed</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%;background:var(--teal);"></div></div>
+  </div>
+
+  <div class="section-label">Select month</div>
+  <div class="month-tabs" id="month-tabs"></div>
+
+  <div class="section-label">Log income</div>
+  <div class="form-card">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Client or description</label>
+        <input type="text" id="inp-client" placeholder="e.g. The Alexander Hotel">
+        <label style="margin-top:8px;">Amount ($)</label>
+        <input type="number" id="inp-amount" placeholder="1500" min="0">
+      </div>
+      <div class="form-group">
+        <label>Income type</label>
+        <select id="inp-type">
+          <option value="retainer">Retainer</option>
+          <option value="project">Photography / project</option>
+          <option value="product">Digital product</option>
+          <option value="coaching">Coaching / strategy call</option>
+          <option value="other">Other</option>
+        </select>
+        <label style="margin-top:8px;">Payment status</label>
+        <select id="inp-status">
+          <option value="confirmed">Confirmed — paid in full</option>
+          <option value="deposit">Deposit received (50%)</option>
+          <option value="invoiced">Invoiced — not yet paid</option>
+          <option value="pipeline">Pipeline — proposal out</option>
+        </select>
+      </div>
+    </div>
+    <button class="add-btn" onclick="addEntry()">+ Add entry</button>
+  </div>
+
+  <div class="section-label">Entries — <span id="month-name-label">this month</span></div>
+  <div class="entries-card" id="entries-container">
+    <div class="empty">No entries yet for this month — log your first income above</div>
+  </div>
+
+  <div class="section-label">Breakdown by stream</div>
+  <div class="breakdown-grid">
+    <div class="b-card"><div class="b-dot" style="background:var(--teal);"></div><div class="b-info"><div class="b-label">Retainers</div><div class="b-val" id="b-retainer">$0</div></div></div>
+    <div class="b-card"><div class="b-dot" style="background:var(--purple);"></div><div class="b-info"><div class="b-label">Projects</div><div class="b-val" id="b-project">$0</div></div></div>
+    <div class="b-card"><div class="b-dot" style="background:var(--amber);"></div><div class="b-info"><div class="b-label">Products</div><div class="b-val" id="b-product">$0</div></div></div>
+    <div class="b-card"><div class="b-dot" style="background:var(--coral);"></div><div class="b-info"><div class="b-label">Coaching</div><div class="b-val" id="b-coaching">$0</div></div></div>
+  </div>
+
+  <div class="section-label">Weekly pitches tracker</div>
+  <div class="pitches-card">
+    <div class="pitches-row">
+      <label>Pitches sent this week:</label>
+      <input type="number" id="pitches-sent" min="0" placeholder="0" oninput="savePitches()">
+      <span class="pitch-stat">Goal: <strong>10+</strong></span>
+      <span class="pitch-stat" id="pitch-status"></span>
+    </div>
+  </div>
+
+  <div class="section-label">Yearly revenue overview</div>
+  <div class="chart-card">
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--teal);"></div>Confirmed + deposit</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#9FE1CB;"></div>Pipeline + invoiced</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#D3D1C7;border:1px dashed #888;"></div>$4k goal</div>
+    </div>
+    <div style="position:relative;width:100%;height:260px;">
+      <canvas id="yearChart" role="img" aria-label="Monthly revenue bar chart for Dayview Media">Monthly revenue tracker showing confirmed income vs pipeline vs $4,000 monthly goal.</canvas>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:1rem 0;font-size:12px;color:var(--text-hint);">
+    Data saved locally in your browser · Dayview Media Revenue Tracker
+  </div>
+
+</div>
+
+<script>
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const GOAL = 4000;
+const now = new Date();
+let currentMonth = now.getMonth();
+let data = {};
+let chart = null;
+
+function load() {
+  try { const d = localStorage.getItem('dayview-revenue-v2'); if (d) data = JSON.parse(d); } catch(e) {}
+  try { const p = localStorage.getItem('dayview-pitches'); if (p) { document.getElementById('pitches-sent').value = p; updatePitchStatus(parseInt(p)||0); } } catch(e) {}
+  renderTabs();
+  renderEntries();
+  renderMetrics();
+  renderChart();
+}
+
+function save() {
+  try { localStorage.setItem('dayview-revenue-v2', JSON.stringify(data)); } catch(e) {}
+}
+
+function savePitches() {
+  const v = parseInt(document.getElementById('pitches-sent').value)||0;
+  try { localStorage.setItem('dayview-pitches', v); } catch(e) {}
+  updatePitchStatus(v);
+}
+
+function updatePitchStatus(v) {
+  const el = document.getElementById('pitch-status');
+  if (v >= 10) { el.innerHTML = '<strong style="color:var(--teal)">Goal hit! Keep going.</strong>'; }
+  else if (v > 0) { el.innerHTML = `<span style="color:var(--amber)">${10-v} more to hit goal</span>`; }
+  else { el.textContent = ''; }
+}
+
+function getKey(m) { return `${now.getFullYear()}-${String(m).padStart(2,'0')}`; }
+function getEntries(m) { return data[getKey(m)] || []; }
+
+function renderTabs() {
+  const container = document.getElementById('month-tabs');
+  container.innerHTML = '';
+  MONTHS.forEach((name, i) => {
+    const total = getEntries(i).filter(e=>e.status==='confirmed'||e.status==='deposit').reduce((s,e)=>s+e.amount,0);
+    const btn = document.createElement('button');
+    btn.className = 'mtab' + (i===currentMonth?' active':'');
+    btn.textContent = total>0 ? `${name} $${Math.round(total).toLocaleString()}` : name;
+    btn.onclick = () => { currentMonth=i; renderTabs(); renderEntries(); renderMetrics(); };
+    container.appendChild(btn);
+  });
+  document.getElementById('month-name-label').textContent = MONTHS[currentMonth];
+}
+
+function pillClass(t) { return {retainer:'pill-retainer',project:'pill-project',product:'pill-product',coaching:'pill-coaching',other:'pill-other'}[t]||'pill-other'; }
+function pillLabel(t) { return {retainer:'Retainer',project:'Project',product:'Product',coaching:'Coaching',other:'Other'}[t]||t; }
+function statusLabel(s) { return {confirmed:'Paid',deposit:'Deposit',invoiced:'Invoiced',pipeline:'Pipeline'}[s]||s; }
+function statusColor(s) { return {confirmed:'var(--teal)',deposit:'var(--teal)',invoiced:'var(--amber)',pipeline:'var(--text-muted)'}[s]||'var(--text-muted)'; }
+function fmt(n) { return '$'+Math.round(n).toLocaleString(); }
+
+function renderEntries() {
+  const entries = getEntries(currentMonth);
+  const container = document.getElementById('entries-container');
+  if (!entries.length) { container.innerHTML = '<div class="empty">No entries yet for this month</div>'; return; }
+  let html = `<table><thead><tr>
+    <th style="width:32%">Client</th>
+    <th style="width:16%">Amount</th>
+    <th style="width:18%">Type</th>
+    <th style="width:18%">Status</th>
+    <th style="width:10%">Date</th>
+    <th style="width:6%"></th>
+  </tr></thead><tbody>`;
+  entries.forEach((e,i) => {
+    const d = e.date ? new Date(e.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+    html += `<tr>
+      <td title="${e.client}">${e.client}</td>
+      <td style="font-weight:500;">${fmt(e.amount)}</td>
+      <td><span class="pill ${pillClass(e.type)}">${pillLabel(e.type)}</span></td>
+      <td style="color:${statusColor(e.status)};font-size:12px;">${statusLabel(e.status)}</td>
+      <td style="color:var(--text-hint);font-size:12px;">${d}</td>
+      <td><button class="del-btn" onclick="deleteEntry(${i})" title="Delete">×</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function renderMetrics() {
+  const entries = getEntries(currentMonth);
+  const confirmed = entries.filter(e=>e.status==='confirmed'||e.status==='deposit').reduce((s,e)=>s+e.amount,0);
+  const gap = Math.max(0, GOAL - confirmed);
+  const pct = Math.min(100, Math.round((confirmed/GOAL)*100));
+
+  document.getElementById('m-total').textContent = fmt(confirmed);
+  document.getElementById('m-gap').textContent = gap>0 ? fmt(gap) : '$0';
+  document.getElementById('m-gap-sub').textContent = gap>0 ? 'keep pitching' : 'goal hit! 🎉';
+  document.getElementById('m-gap-sub').style.color = gap>0 ? 'var(--text-muted)' : 'var(--teal)';
+
+  const statusEl = document.getElementById('m-status');
+  if (pct>=100) { statusEl.textContent='Goal hit!'; statusEl.className='metric-sub on-track'; }
+  else if (pct>=50) { statusEl.textContent=pct+'% there'; statusEl.className='metric-sub on-track'; }
+  else { statusEl.textContent=pct+'% of goal'; statusEl.className='metric-sub off-track'; }
+
+  const fill = document.getElementById('progress-fill');
+  fill.style.width = pct+'%';
+  fill.style.background = pct>=100 ? 'var(--teal)' : pct>=50 ? '#5DCAA5' : 'var(--amber)';
+  document.getElementById('pct-label').textContent = pct+'% of $'+GOAL.toLocaleString()+' goal';
+  document.getElementById('pct-right').textContent = fmt(confirmed)+' confirmed';
+
+  let ytd = 0;
+  MONTHS.forEach((_,i)=>{ ytd += getEntries(i).filter(e=>e.status==='confirmed'||e.status==='deposit').reduce((s,e)=>s+e.amount,0); });
+  document.getElementById('ytd-total').textContent = fmt(ytd);
+
+  ['retainer','project','product','coaching'].forEach(t => {
+    document.getElementById('b-'+t).textContent = fmt(entries.filter(e=>e.type===t).reduce((s,e)=>s+e.amount,0));
+  });
+}
+
+function renderChart() {
+  const confirmed = MONTHS.map((_,i)=>getEntries(i).filter(e=>e.status==='confirmed'||e.status==='deposit').reduce((s,e)=>s+e.amount,0));
+  const pipeline = MONTHS.map((_,i)=>getEntries(i).filter(e=>e.status==='pipeline'||e.status==='invoiced').reduce((s,e)=>s+e.amount,0));
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('yearChart'), {
+    data: {
+      labels: MONTHS,
+      datasets: [
+        { type:'bar', label:'Confirmed', data:confirmed, backgroundColor:'#1D9E75', borderRadius:4, stack:'a' },
+        { type:'bar', label:'Pipeline', data:pipeline, backgroundColor:'#9FE1CB', borderRadius:4, stack:'a' },
+        { type:'line', label:'Goal', data:MONTHS.map(()=>GOAL), borderColor:'#B4B2A9', borderDash:[5,4], borderWidth:1.5, pointRadius:0, tension:0, stack:'b' }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ' '+fmt(ctx.raw) }}},
+      scales:{
+        x:{ grid:{display:false}, ticks:{color:'#A0A09C',font:{size:11},autoSkip:false,maxRotation:0} },
+        y:{ grid:{color:'rgba(0,0,0,0.05)'}, ticks:{color:'#A0A09C',font:{size:11},callback:v=>'$'+v.toLocaleString()}, beginAtZero:true, suggestedMax:GOAL*1.3 }
+      }
+    }
+  });
+}
+
+function addEntry() {
+  const client = document.getElementById('inp-client').value.trim();
+  const amount = parseFloat(document.getElementById('inp-amount').value);
+  const type = document.getElementById('inp-type').value;
+  const status = document.getElementById('inp-status').value;
+  if (!client || !amount || amount<=0) { alert('Please enter a client name and a valid amount.'); return; }
+  const key = getKey(currentMonth);
+  if (!data[key]) data[key] = [];
+  data[key].push({ client, amount, type, status, date: new Date().toISOString() });
+  document.getElementById('inp-client').value = '';
+  document.getElementById('inp-amount').value = '';
+  save();
+  renderTabs();
+  renderEntries();
+  renderMetrics();
+  renderChart();
+}
+
+function deleteEntry(i) {
+  if (!confirm('Delete this entry?')) return;
+  const key = getKey(currentMonth);
+  if (!data[key]) return;
+  data[key].splice(i,1);
+  save();
+  renderTabs();
+  renderEntries();
+  renderMetrics();
+  renderChart();
+}
+
+load();
+</script>
+</body>
+</html>
